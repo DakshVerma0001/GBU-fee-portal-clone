@@ -1,7 +1,6 @@
 <?php
-// update_profile.php
 session_start();
-include 'config.php';
+require_once "config.php";
 
 if (!isset($_SESSION['enrollment'])) {
     header("Location: index.php");
@@ -9,33 +8,33 @@ if (!isset($_SESSION['enrollment'])) {
 }
 
 $enrollment = $_SESSION['enrollment'];
-$msg = "";
+$success = "";
+$error = "";
 
-// Fetch current student data
-$sql = "SELECT * FROM students WHERE enrollment_no = '$enrollment'";
-$result = $conn->query($sql);
+// Fetch student info
+$stmt = $conn->prepare("SELECT mobile_no FROM students WHERE enrollment_no = ?");
+$stmt->bind_param("s", $enrollment);
+$stmt->execute();
+$stmt->bind_result($mobile_no);
+$stmt->fetch();
+$stmt->close();
 
-if (!$result || $result->num_rows == 0) {
-    echo "Student not found!";
-    exit();
-}
+// Handle update
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $new_mobile = trim($_POST['mobile']);
 
-$student = $result->fetch_assoc();
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $new_mobile = $_POST['mobile'];
-
-    // Basic mobile validation
-    if (preg_match('/^[0-9]{10}$/', $new_mobile)) {
-        $update = "UPDATE students SET mobile_no = '$new_mobile' WHERE enrollment_no = '$enrollment'";
-        if ($conn->query($update)) {
-            $msg = "Mobile number updated successfully!";
-            $student['mobile_no'] = $new_mobile;
+    if (preg_match('/^[6-9]\d{9}$/', $new_mobile)) {
+        $stmt = $conn->prepare("UPDATE students SET mobile_no = ? WHERE enrollment_no = ?");
+        $stmt->bind_param("ss", $new_mobile, $enrollment);
+        if ($stmt->execute()) {
+            $success = "Mobile number updated successfully.";
+            $mobile_no = $new_mobile;
         } else {
-            $msg = "Error updating mobile number.";
+            $error = "Failed to update mobile number.";
         }
+        $stmt->close();
     } else {
-        $msg = "Invalid mobile number format.";
+        $error = "Invalid mobile number format.";
     }
 }
 ?>
@@ -45,42 +44,93 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <title>Update Profile</title>
     <style>
-        body { font-family: Arial; background: #f4f4f4; text-align: center; }
-        .container { background: white; padding: 30px; width: 400px; margin: 60px auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
-        input[type=text] {
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #e8f0fe;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 70px auto;
+            background: white;
+            padding: 30px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        h2 {
+            text-align: center;
+            color: #003366;
+            margin-bottom: 25px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
             padding: 10px;
-            width: 90%;
-            margin: 10px 0;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
-        input[type=submit] {
-            padding: 10px 20px;
-            background: #007bff;
+        input[type="submit"] {
+            width: 100%;
+            background-color: #003366;
             color: white;
+            padding: 12px;
             border: none;
-            border-radius: 5px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
         }
-        .back-btn {
-            margin-top: 15px;
-            display: inline-block;
+        input[type="submit"]:hover {
+            background-color: #002244;
+        }
+        .message {
+            text-align: center;
+            font-weight: bold;
+            color: green;
+        }
+        .error {
+            text-align: center;
+            font-weight: bold;
+            color: red;
+        }
+        .back {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .back a {
+            color: #003366;
             text-decoration: none;
-            color: #333;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Update Profile</h2>
-        <form method="POST">
-            <label>Enrollment No: </label>
-            <p><strong><?php echo htmlspecialchars($student['enrollment_no']); ?></strong></p>
 
-            <label>Current Mobile Number:</label><br>
-            <input type="text" name="mobile" value="<?php echo htmlspecialchars($student['mobile_no']); ?>" required><br>
+<div class="container">
+    <h2>Update Mobile Number</h2>
 
-            <input type="submit" value="Update">
-        </form>
-        <p style="color:green;"><?php echo $msg; ?></p>
-        <a href="dashboard.php" class="back-btn">← Back to Dashboard</a>
+    <?php if ($success): ?>
+        <div class="message"><?php echo $success; ?></div>
+    <?php elseif ($error): ?>
+        <div class="error"><?php echo $error; ?></div>
+    <?php endif; ?>
+
+    <form method="POST">
+        <label for="mobile">Mobile Number</label>
+        <input type="text" name="mobile" id="mobile" value="<?php echo htmlspecialchars($mobile_no); ?>" required>
+
+        <input type="submit" value="Update">
+    </form>
+
+    <div class="back">
+        <a href="dashboard.php">← Back to Dashboard</a>
     </div>
+</div>
+
 </body>
 </html>
