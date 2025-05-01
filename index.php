@@ -1,63 +1,89 @@
 <?php
-// index.php
 session_start();
-include 'config.php';
-
-$msg = "";
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $enrollment = $_POST['enrollment'];
-    $mobile = $_POST['mobile'];
-
-    // Generate a fake OTP (e.g., 123456)
-    $otp = rand(100000, 999999);
-
-    // Insert or update student record
-    $sql = "INSERT INTO students (enrollment_no, mobile_no, otp, otp_verified)
-            VALUES ('$enrollment', '$mobile', '$otp', 0)
-            ON DUPLICATE KEY UPDATE otp='$otp', otp_verified=0";
-
-    if ($conn->query($sql) === TRUE) {
-        $_SESSION['enrollment'] = $enrollment;
-        $msg = "OTP sent successfully (Simulated OTP: $otp)";
-        // In real scenario, send OTP via SMS gateway
-    } else {
-        $msg = "Error: " . $conn->error;
-    }
+if (isset($_SESSION['enrollment'])) {
+    header("Location: dashboard.php");
+    exit();
 }
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>College Fee Payment Portal</title>
+    <title>Student Login - College Fee Portal</title>
     <style>
-        body { font-family: Arial; background: #f9f9f9; text-align: center; }
-        .container { margin-top: 80px; background: white; padding: 30px; width: 400px; margin: auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
-        input[type=text], input[type=number] {
-            padding: 10px;
-            width: 90%;
-            margin: 10px 0;
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #e8f0fe;
+            margin: 0;
+            padding: 0;
         }
-        input[type=submit] {
-            padding: 10px 20px;
-            background: #5c2d91;
+        .container {
+            width: 450px;
+            background: white;
+            margin: 80px auto;
+            border: 1px solid #d2d2d2;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h2 {
+            text-align: center;
+            color: #003366;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        input[type="submit"] {
+            width: 100%;
+            background: #003366;
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background: #002244;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 25px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Online Fee Payment</h2>
-        <form method="POST">
-            <input type="text" name="enrollment" placeholder="Enrollment No / PIN" required><br>
-            <input type="text" name="mobile" placeholder="Mobile Number" required><br>
-            <input type="submit" value="Verify Mobile & Send OTP">
-        </form>
-        <p style="color:green;"><?php echo $msg; ?></p>
-        <a href="verify_otp.php">Already got OTP? Verify here</a>
+
+<div class="container">
+    <h2>Online Fee Payment Portal</h2>
+    <form method="POST" action="verify_otp.php">
+        <label for="enrollment">Enrollment Number</label>
+        <input type="text" name="enrollment" id="enrollment" required>
+
+        <label for="mobile">Registered Mobile Number</label>
+        <input type="text" name="mobile" id="mobile" required>
+
+        <input type="submit" value="Generate OTP">
+    </form>
+
+    <div class="footer">
+        &copy; <?php echo date("Y"); ?> Your College Name. All rights reserved.
     </div>
+</div>
+
 </body>
 </html>
