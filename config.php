@@ -4,7 +4,7 @@
 $host = "localhost";
 $user = "root"; // default user for XAMPP
 $password = ""; // default password for XAMPP
-$dbname = "fee_portal";
+$dbname = "college_fee_portal";
 
 $conn = new mysqli($host, $user, $password, $dbname);
 
